@@ -13,7 +13,7 @@ if __name__ == '__main__':
                     mlflow_triton_client.update_deployment_triton(model_name, model_version)
             else:
                 mlflow_triton_client.create_deployment_triton(model_name, model_version)
-        time.sleep(300)
+        time.sleep(int(config.INTERVAL))
 
 
 
