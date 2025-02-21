@@ -1,10 +1,12 @@
+import os
+
 from config.init import get_config
 import time
 import mlflowtriton
 if __name__ == '__main__':
     config = get_config()
+    mlflow_triton_client = mlflowtriton.MlflowTriton()
     while True:
-        mlflow_triton_client = mlflowtriton.MlflowTriton()
         model_alias = mlflow_triton_client.get_models_with_alias()
         model_triton = mlflowtriton.get_model_triton()
         for model_name, model_version in model_alias.items():

@@ -45,7 +45,7 @@ class MlflowTriton:
         return models_alias
 
     def create_deployment_triton(self, model_name, version):
-        command = ["mlflow", "deployments", "create", "-t",  "triton", "--flavor", "onnx", "-m",  f"models:/{model_name}/{version}",  "--name", model_name]
+        command = ["export" "mlflow", "deployments", "create", "-t",  "triton", "--flavor", "onnx", "-m",  f"models:/{model_name}/{version}",  "--name", model_name]
         create_result = subprocess.run(command, capture_output=True, text=True)
         if create_result.returncode != 0:
             self.logger.log(logging.ERROR, f"Error in creating Triton deployment for model {model_name}: {create_result.stderr}")
