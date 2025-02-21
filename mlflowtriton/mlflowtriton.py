@@ -1,7 +1,5 @@
-import json
 import subprocess
 import sys
-
 import mlflow
 from config.init import get_config
 from logger.logger import get_logger
