@@ -6,6 +6,7 @@ import mlflow
 from config.init import get_config
 from logger.logger import get_logger
 import logging
+import  ast
 
 
 def get_model_triton() -> dict:
@@ -13,7 +14,7 @@ def get_model_triton() -> dict:
     result = subprocess.run(command, capture_output=True, text=True)
     if result.returncode != 0:
         raise RuntimeError("Error in getting Triton models")
-    models_triton = json.loads(result.stdout)
+    models_triton = ast.literal_eval(result.stdout.splitlines()[1])
     model_dict = {}
     for i in models_triton:
         model_name = i['name']
@@ -46,17 +47,20 @@ class MlflowTriton:
         return models_alias
 
     def create_deployment_triton(self, model_name, version):
-        command = ["mlflow", "deployments", "create", "-t",  "triton",  "-m",  f"models:/{model_name}/{version}",  "-n", model_name]
-        result = subprocess.run(command, capture_output=True, text=True)
-        if result.returncode != 0:
-            self.logger.log(logging.ERROR, f"Error in creating Triton deployment for model {model_name}: {result.stdout}")
-        self.logger.log(logging.INFO, f"Model {model_name} with version {version} deployed successfully")
+        command = ["mlflow", "deployments", "create", "-t",  "triton", "--flavor", "onnx", "-m",  f"models:/{model_name}/{version}",  "--name", model_name]
+        create_result = subprocess.run(command, capture_output=True, text=True)
+        if create_result.returncode != 0:
+            self.logger.log(logging.ERROR, f"Error in creating Triton deployment for model {model_name}: {create_result.stderr}")
+        else:
+            self.logger.log(logging.INFO, f"Model {model_name} with version {version} deployed successfully")
     def update_deployment_triton(self, model_name, version):
-        command = ["mlflow", "deployments", "update", "-t",  "triton",  "-m",  f"models:/{model_name}/{version}",  "-n", model_name]
-        result = subprocess.run(command, capture_output=True, text=True)
-        if result.returncode != 0:
-            self.logger.log(logging.ERROR, f"Error in updating Triton deployment for model {model_name}: {result.stdout}")
-        self.logger.log(logging.INFO, f"Model {model_name} with version {version} updated successfully")
+        command = ["mlflow", "deployments", "update", "-t",  "triton", "--flavor", "onnx", "-m",  f"models:/{model_name}/{version}",  "--name", model_name]
+        update_result = subprocess.run(command, capture_output=True, text=True)
+        if update_result.returncode != 0:
+            print(update_result.stderr)
+            self.logger.log(logging.ERROR, f"Error in updating Triton deployment for model {model_name}: {update_result.stdout}")
+        else:
+            self.logger.log(logging.INFO, f"Model {model_name} with version {version} updated successfully")
 
 
 
