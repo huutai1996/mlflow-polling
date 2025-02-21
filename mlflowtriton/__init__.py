@@ -1,1 +1,1 @@
-from .mlflowtriton import MlflowTriton
+from .mlflowtriton import *

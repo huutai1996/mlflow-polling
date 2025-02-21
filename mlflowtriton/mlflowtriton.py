@@ -1,9 +1,28 @@
+import json
+import subprocess
 import sys
 
 import mlflow
 from config.init import get_config
 from logger.logger import get_logger
 import logging
+
+
+def get_model_triton() -> dict:
+    command = ["mlflow", "deployments", "list",  "-t",  "triton"]
+    result = subprocess.run(command, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError("Error in getting Triton models")
+    models_triton = json.loads(result.stdout)
+    model_dict = {}
+    for i in models_triton:
+        model_name = i['name']
+        model_uri  = i['mlflow_model_uri']
+        model_version = model_uri.split('/')[-1]
+        model_dict[model_name] = model_version
+    return model_dict
+
+
 class MlflowTriton:
     def __init__(self):
         self.logger = get_logger(__name__)
@@ -12,15 +31,11 @@ class MlflowTriton:
         if not self.uri:
             self.logger.log(logging.ERROR, "MLFLOW_URI is not set")
             sys.exit(1)
-        self.s3_access_key = self.config.MLFLOW_S3_ACCESS_KEY
-        self.s3_secret_key = self.config.MLFLOW_S3_SECRET_KEY
         self.alias = self.config.ALIAS
         if not self.alias:
             self.logger.log(logging.ERROR, "ALIAS is not set")
             sys.exit(1)
         self.client = mlflow.tracking.MlflowClient(tracking_uri=self.uri)
-        self.triton_uri = self.config.TRITON_URI
-
     def get_models_with_alias(self) -> dict:
         models = self.client.search_registered_models()
         models_alias = {}
@@ -29,8 +44,19 @@ class MlflowTriton:
                 models_alias[model.name] = model.aliases[self.alias]
                 self.logger.log(logging.INFO, f"Model {model.name} with alias {self.alias} found")
         return models_alias
-    def check_model_exist_triton(self, model_name) -> (bool, str):
-        pass
+
+    def create_deployment_triton(self, model_name, version):
+        command = ["mlflow", "deployments", "create", "-t",  "triton",  "-m",  f"models:/{model_name}/{version}",  "-n", model_name]
+        result = subprocess.run(command, capture_output=True, text=True)
+        if result.returncode != 0:
+            self.logger.log(logging.ERROR, f"Error in creating Triton deployment for model {model_name}: {result.stdout}")
+        self.logger.log(logging.INFO, f"Model {model_name} with version {version} deployed successfully")
+    def update_deployment_triton(self, model_name, version):
+        command = ["mlflow", "deployments", "update", "-t",  "triton",  "-m",  f"models:/{model_name}/{version}",  "-n", model_name]
+        result = subprocess.run(command, capture_output=True, text=True)
+        if result.returncode != 0:
+            self.logger.log(logging.ERROR, f"Error in updating Triton deployment for model {model_name}: {result.stdout}")
+        self.logger.log(logging.INFO, f"Model {model_name} with version {version} updated successfully")
 
 
 
